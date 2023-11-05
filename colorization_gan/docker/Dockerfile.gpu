@@ -1,0 +1,48 @@
+FROM nvidia/cuda:11.0.3-cudnn8-devel-ubuntu20.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && \
+        apt-get install -y software-properties-common && \
+        add-apt-repository ppa:deadsnakes/ppa && \
+        apt-get update && \
+        apt-get install -y \
+        libsm6 \
+        libxext6 \
+        libxrender1 \
+        python3-pip \
+	python3.7 \
+	python3.7-distutils \
+	vim \
+	ffmpeg \
+	libsm6 \
+	libxext6
+
+RUN pip3 install gdown
+RUN gdown -O /tmp/my_model_colorization.h5 'https://drive.google.com/uc?id=12hyrk6A3bcpAFIBNW0sfeEevJ9daUTGr'
+
+RUN pip3 install -U pip setuptools wheel
+RUN python3.7 -m pip install \
+        opencv-python==4.1.0.25 \
+        tensorflow==1.13.1 \
+	keras==2.2.4 \
+	h5py==2.10.0 \
+	datasets \
+	Pillow \
+	wandb
+
+RUN ln -s /usr/local/cuda-11.0/targets/x86_64-linux/lib/libcusolver.so.10 /usr/local/cuda-11.0/targets/x86_64-linux/lib/libcusolver.so.11
+
+ARG LD_LIBRARY_PATH=/usr/local/cuda-11.0/targets/x86_64-linux/lib/:$PATH
+
+
+
+RUN mkdir -p /code/MODEL/imagenet && mv /tmp/my_model_colorization.h5 /code/MODEL/imagenet/modelPretrained.h5
+
+# pre-cache vgg16
+RUN PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python python3.7 -c "from keras import applications; applications.vgg16.VGG16(weights='imagenet', include_top=True)"
+
+COPY . /code
+WORKDIR /code/SOURCE
+RUN sed -i "s/BATCH_SIZE = 10/BATCH_SIZE = 1/" config.py
+
