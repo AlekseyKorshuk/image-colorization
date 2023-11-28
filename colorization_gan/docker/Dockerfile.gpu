@@ -28,6 +28,7 @@ RUN python3.7 -m pip install \
 	keras==2.2.4 \
 	h5py==2.10.0 \
 	datasets \
+	gradio \
 	Pillow \
 	wandb
 
